@@ -1,6 +1,7 @@
 import json
 import os 
 import sys
+from datetime import datetime
 
 class Bank:
     def __init__(self):
@@ -25,10 +26,11 @@ class Bank:
             Enter 2 to deposit money
             Enter 3 to withdraw money
             Enter 4 to check balance
-            Enter 5 to exit
+            Enter 5 to view transaction history
+            Enter 6 to Exit
             """)
 
-            options = {'1': self.create_account, '2': self.deposit, '3': self.withdraw, '4': self.check_balance, '5': self.exit_system}
+            options = {'1': self.create_account, '2': self.deposit, '3': self.withdraw, '4': self.check_balance, '5': self.view_transactions, '6': self.exit_system}
 
             function = options.get(user_input)
             if function:
@@ -53,7 +55,7 @@ class Bank:
             print("Invalid input for balance. Setting initial balance to 0.")
             initial_balance = 0
         
-        self.accounts[email_id] = {"name": name, "security_pin": security_pin, "balance": initial_balance}
+        self.accounts[email_id] = {"name": name, "security_pin": security_pin, "balance": initial_balance, "transactions": []}
         self.save_accounts()
         print("Account created successfully.")
 
@@ -87,6 +89,7 @@ class Bank:
             return
         
         self.accounts[email_id]['balance'] += amount
+        self.record_transaction(email_id, "deposit", amount)
         self.save_accounts()
         print(f"Deposited {amount} successfully. New balance is {self.accounts[email_id]['balance']}.")
 
@@ -107,6 +110,7 @@ class Bank:
             print("Insufficient balance.")
             return
         self.accounts[email_id]['balance'] -= amount
+        self.record_transaction(email_id, "withdraw", amount)
         self.save_accounts()    
         print(f"Withdrew {amount} successfully. New balance is {self.accounts[email_id]['balance']}.")
 
@@ -116,6 +120,31 @@ class Bank:
         if not self.validate_account(email_id, security_pin):
             return
         print(f"Your current balance is {self.accounts[email_id]['balance']}.")
+
+    def record_transaction(self, email_id, transaction_type, amount):
+        transaction = {
+            "type": transaction_type,
+            "amount": amount,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "balance_after": self.accounts[email_id]['balance']
+        }
+        self.accounts[email_id]['transactions'].append(transaction)
+        self.save_accounts()
+
+    def view_transactions(self):
+        email_id = input("Enter your email ID: ")
+        security_pin = input("Enter your security pin: ")
+        if not self.validate_account(email_id, security_pin):
+            return 
+        
+        transac = self.accounts[email_id]['transactions']
+        if not transac:
+            print("No transactions found.")
+            return
+        
+        print("Transaction History:")
+        for txn in transac:
+            print(f"{txn['timestamp']} - {txn['type'].capitalize()}: {txn['amount']} - 'Balance after': {txn['balance_after']}")
 
     def exit_system(self):
         print("Exiting the system. Goodbye!")
